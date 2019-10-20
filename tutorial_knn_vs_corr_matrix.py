@@ -15,7 +15,7 @@ def randomString(stringLength=10):
     return ''.join(random.choice(letters) for i in range(stringLength))
 
 # create random integers as metrics per customer
-df = pd.DataFrame(np.random.randint(0,50,size=(1000, 5)), columns=['Unique_Clicks','Unique_Views','Unique_Products','Total_Comments', 'Total_Reviews'])
+df = pd.DataFrame(np.random.randint(0,50,size=(100, 5)), columns=['Unique_Clicks','Unique_Views','Unique_Products','Total_Comments', 'Total_Reviews'])
 df['Visits'] = [np.random.randint(0,200) for _ in range(len(df.index))]
 df['Total_Spend'] = [np.random.randint(0,10000) for _ in range(len(df.index))]
 df['Top_Department'] = [random.choice('ABCDEFG') for _ in range(len(df.index))]
