@@ -44,7 +44,7 @@ scalar = StandardScaler()
 # scale the numpy array
 df_num_array = scalar.fit_transform(df_num_array)
 
-# create datafrome from caled numpy array
+# create datafrome from called numpy array
 df_num_scaled = pd.DataFrame(df_num_array)
 
 ###################################################
@@ -81,10 +81,10 @@ df_corr = df_corr[df_corr.id_match != 'Match'].drop('id_match', axis = 1)
 df_corr = pd.DataFrame(df_corr)
 
 # select top id for cohort
-corr_id = df_corr['uuid'].iloc[0]
+corr_id = df_corr['uuid2'].iloc[0]
 
-df_corr[df_corr.uuid == corr_id].sort_values('Correlation', ascending = False).head()
-
+df_corr = df_corr[df_corr.uuid == corr_id].sort_values('Correlation', ascending = False).head()
+df_corr
 ###################################################
 #### k nearest neighbor makes way more sense
 ###################################################
@@ -92,7 +92,7 @@ df_corr[df_corr.uuid == corr_id].sort_values('Correlation', ascending = False).h
 # bring in uuid's and add to scaled numeric data
 df_num_scaled.columns = df_num.columns
 df_id = df.iloc[:,0]
-df = pd.concat([df_id.reset_index(drop=True),df_num_scaled.reset_index(drop=True)], axis =1).fillna(0)
+df = pd.concat([df_id.reset_index(drop=True),df_num_scaled.reset_index(drop=True)], axis =1)
 df_melt = pd.melt(df, id_vars=['uuid'])
 df_melt.rename(columns = {'uuid':'foo'}, inplace = True)
 df_pivot = df_melt.pivot(index = 'foo', columns = 'variable', values = 'value' ).fillna(0)
@@ -105,12 +105,13 @@ model_knn = NearestNeighbors(metric='cosine', algorithm='brute', n_neighbors=10,
 model_knn.fit(df_matrix)
 
 # select top index name to get a cohort
-knn_id = df_pivot.index[1]
+knn_id = df_pivot.index[0]
 
 query_index = df_pivot.loc[knn_id].values.reshape(1,-1)
 distances, indices = model_knn.kneighbors(query_index, n_neighbors=11)
+arrayKNN = [indices,distances]
 
 #get array of cohort to pass on
-target_id = repr('aafpsjqcfz')
 cohort_list = df_pivot.index[indices.flatten()[1:]].values.tolist()
-cohort_list
+cohort_array = [knn_id,cohort_list]
+cohort_array
