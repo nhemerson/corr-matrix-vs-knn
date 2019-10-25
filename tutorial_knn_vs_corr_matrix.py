@@ -47,19 +47,27 @@ df_num_array = scalar.fit_transform(df_num_array)
 # create datafrome from called numpy array
 df_num_scaled = pd.DataFrame(df_num_array)
 
-###################################################
-#### a correlation table is not very reasonable
-###################################################
-
-# bring in uuid's and add to scaled numeric data
+# bring in uuid's and add to scaled numeric data for correlation matrix
 df_id = df.iloc[:,0]
 df = pd.concat([df_id.reset_index(drop=True),df_num_scaled.reset_index(drop=True)], axis =1)
 df_melt = pd.melt(df, id_vars=['uuid'])
 df_melt.rename(columns = {'uuid':'foo'}, inplace = True)
-df_pivot = df_melt.pivot(index = 'variable', columns = 'foo', values = 'value' )
+df_corr_pivot = df_melt.pivot(index = 'variable', columns = 'foo', values = 'value' )
+
+# bring in uuid's and add to scaled numeric data for KNN model
+df_num_scaled.columns = df_num.columns
+df_id = df.iloc[:,0]
+df = pd.concat([df_id.reset_index(drop=True),df_num_scaled.reset_index(drop=True)], axis =1)
+df_melt = pd.melt(df, id_vars=['uuid'])
+df_melt.rename(columns = {'uuid':'foo'}, inplace = True)
+df_knn_pivot = df_melt.pivot(index = 'foo', columns = 'variable', values = 'value' ).fillna(0)
+
+###################################################
+#### a correlation table is not very reasonable
+###################################################
 
 # get pearson correlation coefficients
-df_corr = df_pivot.corr(method = 'pearson')
+df_corr = df_corr_pivot.corr(method = 'pearson')
 
 # reset the index to move correlation matrix to a table
 df_corr = df_corr.reset_index()
@@ -85,33 +93,26 @@ corr_id = df_corr['uuid2'].iloc[0]
 
 df_corr = df_corr[df_corr.uuid == corr_id].sort_values('Correlation', ascending = False).head()
 df_corr
+
 ###################################################
 #### k nearest neighbor makes way more sense
 ###################################################
 
-# bring in uuid's and add to scaled numeric data
-df_num_scaled.columns = df_num.columns
-df_id = df.iloc[:,0]
-df = pd.concat([df_id.reset_index(drop=True),df_num_scaled.reset_index(drop=True)], axis =1)
-df_melt = pd.melt(df, id_vars=['uuid'])
-df_melt.rename(columns = {'uuid':'foo'}, inplace = True)
-df_pivot = df_melt.pivot(index = 'foo', columns = 'variable', values = 'value' ).fillna(0)
-
 # knn needs a csr matrix to calculate
-df_matrix = csr_matrix(df_pivot.values)
+df_matrix = csr_matrix(df_knn_pivot.values)
 
 # fit the model via the sklearn API
 model_knn = NearestNeighbors(metric='cosine', algorithm='brute', n_neighbors=10, n_jobs=-1)
 model_knn.fit(df_matrix)
 
 # select top index name to get a cohort
-knn_id = df_pivot.index[0]
+knn_id = df_knn_pivot.index[0]
 
-query_index = df_pivot.loc[knn_id].values.reshape(1,-1)
+query_index = df_knn_pivot.loc[knn_id].values.reshape(1,-1)
 distances, indices = model_knn.kneighbors(query_index, n_neighbors=11)
 arrayKNN = [indices,distances]
 
 #get array of cohort to pass on
-cohort_list = df_pivot.index[indices.flatten()[1:]].values.tolist()
+cohort_list = df_knn_pivot.index[indices.flatten()[1:]].values.tolist()
 cohort_array = [knn_id,cohort_list]
 cohort_array
